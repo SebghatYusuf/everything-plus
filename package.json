@@ -1,0 +1,27 @@
+{
+  "name": "everything-clone",
+  "private": true,
+  "scripts": {
+    "dev": "tauri dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && cargo run",
+    "build": "tauri build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && cargo build --release",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && cargo test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && cargo clippy",
+    "install:all": "npm install && cd frontend && npm install",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@tauri-apps/cli": "^1.5.9"
+  },
+  "workspaces": [
+    "frontend"
+  ]
+}

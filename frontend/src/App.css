@@ -1,0 +1,10 @@
+/* App-specific styles */
+.App {
+  text-align: center;
+}
+
+.search-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
