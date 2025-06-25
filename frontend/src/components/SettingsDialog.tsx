@@ -194,7 +194,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <div>
                   <p className="text-sm font-medium">Start with Windows</p>
                   <p className="text-xs text-muted-foreground">
-                    Launch Everything Clone when Windows starts
+                    Launch Everything Plus when Windows starts
                   </p>
                 </div>
                 <Button

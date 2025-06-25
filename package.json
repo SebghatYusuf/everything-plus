@@ -1,5 +1,5 @@
 {
-  "name": "everything-clone",
+  "name": "everything-plus",
   "private": true,
   "scripts": {
     "dev": "tauri dev",

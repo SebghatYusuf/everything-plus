@@ -1,4 +1,4 @@
-# Everything Clone - User Guide
+# Everything Plus - User Guide
 
 A modern file search application inspired by macOS Spotlight and Everything.
 
@@ -6,22 +6,22 @@ A modern file search application inspired by macOS Spotlight and Everything.
 
 ### Windows
 
-1. Download the latest release from [GitHub Releases](https://github.com/your-username/everything-clone/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/your-username/everything-plus/releases)
 2. Run the installer `EverythingClone-Setup.exe`
 3. Follow the installation wizard
-4. Launch Everything Clone from the Start menu or desktop shortcut
+4. Launch Everything Plus from the Start menu or desktop shortcut
 
 ### Manual Installation
 
 1. Ensure you have the [Everything application](https://www.voidtools.com/) installed
 2. Download and extract the portable version
-3. Run `everything-clone.exe`
+3. Run `everything-plus.exe`
 
 ## Getting Started
 
 ### First Launch
 
-On first launch, Everything Clone will:
+On first launch, Everything Plus will:
 
 1. **Initialize the database** - Creates a local SQLite database for indexing
 2. **Start initial indexing** - Scans your selected drives/folders
@@ -148,7 +148,7 @@ Common exclusions (pre-configured):
 
 ### System Integration
 
-**Start with Windows:** Launch Everything Clone when Windows boots
+**Start with Windows:** Launch Everything Plus when Windows boots
 
 **Show in System Tray:** Keep the application accessible from the system tray
 
@@ -242,18 +242,18 @@ For developers and automation:
 
 ```bash
 # Search from command line
-everything-clone.exe --search "readme.md"
+everything-plus.exe --search "readme.md"
 
 # Export results
-everything-clone.exe --search "*.log" --export results.csv
+everything-plus.exe --search "*.log" --export results.csv
 
 # Rebuild index
-everything-clone.exe --reindex
+everything-plus.exe --reindex
 ```
 
 ### Scripting Integration
 
-Everything Clone can be integrated with scripts and other applications through its API endpoints (when running).
+Everything Plus can be integrated with scripts and other applications through its API endpoints (when running).
 
 ## Privacy & Security
 
@@ -264,7 +264,7 @@ Everything Clone can be integrated with scripts and other applications through i
 
 ## Updates
 
-Everything Clone checks for updates automatically and will notify you when new versions are available.
+Everything Plus checks for updates automatically and will notify you when new versions are available.
 
 **Manual Update Check:**
 1. Help → Check for Updates
@@ -282,18 +282,18 @@ Everything Clone checks for updates automatically and will notify you when new v
 
 When reporting issues, please include:
 - Operating system version
-- Everything Clone version
+- Everything Plus version
 - Steps to reproduce the issue
 - Any error messages
 - Sample files/folders if relevant
 
 ### Feature Requests
 
-Everything Clone is actively developed. Feature requests are welcome:
+Everything Plus is actively developed. Feature requests are welcome:
 - GitHub Issues with "enhancement" label
 - Include use case and expected behavior
 - Check existing issues first
 
 ---
 
-**Everything Clone v1.0** - Built with ❤️ for fast, modern file searching.
+**Everything Plus v1.0** - Built with ❤️ for fast, modern file searching.

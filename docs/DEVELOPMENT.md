@@ -1,6 +1,6 @@
 # Development Setup Guide
 
-This guide will help you set up the Everything Clone development environment.
+This guide will help you set up the Everything Plus development environment.
 
 ## Prerequisites
 
@@ -32,8 +32,8 @@ This guide will help you set up the Everything Clone development environment.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/everything-clone.git
-cd everything-clone
+git clone https://github.com/your-username/everything-plus.git
+cd everything-plus
 ```
 
 ### 2. Install Dependencies

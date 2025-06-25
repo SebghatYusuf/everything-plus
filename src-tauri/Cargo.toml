@@ -1,10 +1,10 @@
 [package]
-name = "everything-clone"
+name = "everything-plus"
 version = "0.0.1"
 description = "A modern file search application for Windows"
 authors = ["Your Name <your.email@example.com>"]
 license = "MIT"
-repository = "https://github.com/your-username/everything-clone"
+repository = "https://github.com/your-username/everything-plus"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,7 +20,7 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-everything-clone-backend = { path = "../backend" }
+everything-plus-backend = { path = "../backend" }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

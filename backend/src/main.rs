@@ -8,7 +8,7 @@ async fn main() -> Result<()> {
     // Initialize logging
     init_logging()?;
     
-    info!("Starting Everything Clone...");
+    info!("Starting Everything Plus...");
 
     // Initialize the application (Everything SDK handles indexing automatically)
     let mut app = EverythingClone::new().await?;
@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
     }
 
     // Wait for shutdown signal
-    info!("Everything Clone is running. Press Ctrl+C to shutdown.");
+    info!("Everything Plus is running. Press Ctrl+C to shutdown.");
     signal::ctrl_c().await?;
     info!("Shutdown signal received, exiting...");
 

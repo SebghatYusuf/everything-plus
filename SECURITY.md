@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-We actively support the following versions of Everything Clone with security updates:
+We actively support the following versions of Everything Plus with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -11,7 +11,7 @@ We actively support the following versions of Everything Clone with security upd
 
 ## Reporting a Vulnerability
 
-We take security vulnerabilities seriously. If you discover a security vulnerability in Everything Clone, please report it responsibly.
+We take security vulnerabilities seriously. If you discover a security vulnerability in Everything Plus, please report it responsibly.
 
 ### How to Report
 
@@ -33,7 +33,7 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 
 ### Security Measures
 
-Everything Clone implements several security measures:
+Everything Plus implements several security measures:
 
 #### Data Protection
 - **Local Storage Only**: All file indexes and metadata are stored locally
@@ -56,7 +56,7 @@ Everything Clone implements several security measures:
 ### Known Security Considerations
 
 #### File System Access
-- Everything Clone requires read access to indexed directories
+- Everything Plus requires read access to indexed directories
 - Users should carefully consider which directories to index
 - Sensitive directories can be excluded via settings
 
@@ -74,7 +74,7 @@ Everything Clone implements several security measures:
 
 1. **Limit Indexed Directories**: Only index directories you need to search
 2. **Exclude Sensitive Paths**: Add sensitive directories to the exclude list
-3. **Regular Updates**: Keep Everything Clone updated to the latest version
+3. **Regular Updates**: Keep Everything Plus updated to the latest version
 4. **Secure Backups**: Encrypt database backups if stored externally
 5. **Network Drives**: Be cautious when indexing network-mounted drives
 
@@ -122,7 +122,7 @@ For security-related inquiries:
 - **Response Time**: Within 48 hours
 
 For general issues:
-- **GitHub Issues**: https://github.com/your-username/everything-clone/issues
+- **GitHub Issues**: https://github.com/your-username/everything-plus/issues
 - **Documentation**: See README.md and docs/
 
 ### Legal
@@ -136,10 +136,10 @@ We follow responsible disclosure practices and ask that security researchers do 
 
 ### Attribution
 
-We believe in recognizing security researchers who help make Everything Clone more secure. With your permission, we will:
+We believe in recognizing security researchers who help make Everything Plus more secure. With your permission, we will:
 
 - Credit you in our security advisory
 - Include your name in our release notes
 - Provide a reference letter if requested
 
-Thank you for helping keep Everything Clone and its users secure.
+Thank you for helping keep Everything Plus and its users secure.

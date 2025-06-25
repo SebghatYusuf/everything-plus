@@ -74,7 +74,7 @@ function App() {
           <div className="flex items-center gap-2">
             <Search className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-semibold">
-              Everything Clone {isTauri && <span className="text-xs text-muted-foreground">(Desktop)</span>}
+              Everything Plus {isTauri && <span className="text-xs text-muted-foreground">(Desktop)</span>}
             </h1>
           </div>
           

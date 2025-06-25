@@ -8,7 +8,7 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "Everything Clone",
+    "productName": "Everything Plus",
     "version": "1.0.0"
   },
   "tauri": {
@@ -80,7 +80,7 @@
     "bundle": {
       "active": true,
       "category": "Utility",
-      "copyright": "© 2025 Everything Clone Contributors",
+      "copyright": "© 2025 Everything Plus Contributors",
       "deb": {
         "depends": []
       },
@@ -92,7 +92,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.everythingclone.app",
+      "identifier": "com.sebghatyusuf.everythingplus.app",
       "longDescription": "A modern file search application inspired by macOS Spotlight and Everything. Fast, intuitive, and powerful file searching for Windows.",
       "macOS": {
         "entitlements": null,
@@ -131,7 +131,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "Everything Clone",
+        "title": "Everything Plus",
         "width": 1000,
         "height": 700,
         "minWidth": 800,
