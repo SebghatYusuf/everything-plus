@@ -147,6 +147,21 @@
         "transparent": false,
         "visible": true,
         "fileDropEnabled": true
+      },
+      {
+        "label": "spotlight",
+        "url": "index.html",
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "center": true,
+        "width": 600,
+        "height": 400,
+        "resizable": false,
+        "fullscreen": false,
+        "fileDropEnabled": false
       }
     ]
   }
