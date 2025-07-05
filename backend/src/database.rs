@@ -1,5 +1,6 @@
 use anyhow::Result;
-use sqlx::{Row, SqlitePool};
+use sqlx::{Row, Sqlite, SqlitePool};
+use sqlx::query::Query;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
@@ -159,59 +160,34 @@ impl Database {
     pub async fn search(&self, query: &SearchQuery) -> Result<SearchResult> {
         let start_time = std::time::Instant::now();
         
-        let mut sql = String::from("SELECT * FROM file_entries WHERE 1=1");
         let mut conditions = Vec::new();
-        let mut params: Vec<Box<dyn sqlx::Encode<'_, sqlx::Sqlite> + Send + Sync>> = Vec::new();
-        let mut param_count = 0;
+        let mut sql = String::from("SELECT * FROM file_entries");
 
         // Name/path search
         if !query.query.trim().is_empty() {
             if query.filters.use_regex {
-                // For regex, we'll do a LIKE search as a fallback
-                conditions.push(format!("(name LIKE ? OR path LIKE ?)"));
-                let pattern = format!("%{}%", query.query);
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-                param_count += 2;
+                conditions.push("(name REGEXP ?1 OR path REGEXP ?1)".to_string());
             } else if query.filters.case_sensitive {
-                conditions.push(format!("(name LIKE ? OR path LIKE ?)"));
-                let pattern = format!("%{}%", query.query);
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-                param_count += 2;
+                conditions.push("(name LIKE ?1 OR path LIKE ?1)".to_string());
             } else {
-                conditions.push(format!("(LOWER(name) LIKE ? OR LOWER(path) LIKE ?)"));
-                let pattern = format!("%{}%", query.query.to_lowercase());
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-                param_count += 2;
+                conditions.push("(LOWER(name) LIKE ?1 OR LOWER(path) LIKE ?1)".to_string());
             }
         }
 
         // File type filters
         if !query.filters.file_types.is_empty() {
             let placeholders: Vec<String> = (0..query.filters.file_types.len())
-                .map(|_| "?".to_string())
+                .map(|i| format!("?{}", i + 2))
                 .collect();
             conditions.push(format!("extension IN ({})", placeholders.join(", ")));
-            
-            for file_type in &query.filters.file_types {
-                params.push(Box::new(file_type.clone()));
-                param_count += 1;
-            }
         }
 
         // Size filters
-        if let Some(size_min) = query.filters.size_min {
+        if query.filters.size_min.is_some() {
             conditions.push("size >= ?".to_string());
-            params.push(Box::new(size_min));
-            param_count += 1;
         }
-        
-        if let Some(size_max) = query.filters.size_max {
+        if query.filters.size_max.is_some() {
             conditions.push("size <= ?".to_string());
-            params.push(Box::new(size_max));
-            param_count += 1;
         }
 
         // Directory/file type filters
@@ -226,18 +202,16 @@ impl Database {
             conditions.push("name NOT LIKE '.%'".to_string());
         }
 
-        // Add conditions to SQL
+        // Build final query
         if !conditions.is_empty() {
-            sql.push_str(" AND ");
+            sql.push_str(" WHERE ");
             sql.push_str(&conditions.join(" AND "));
         }
 
-        // Add ordering and limits
         sql.push_str(" ORDER BY is_directory DESC, name ASC");
         
         if let Some(limit) = query.limit {
             sql.push_str(&format!(" LIMIT {}", limit));
-            
             if let Some(offset) = query.offset {
                 sql.push_str(&format!(" OFFSET {}", offset));
             }
@@ -245,11 +219,26 @@ impl Database {
 
         debug!("Executing search query: {}", sql);
 
-        // Execute the query
-        let mut query_builder = sqlx::query(&sql);
-        for param in params {
-            // This is a simplified approach - in a real implementation,
-            // you'd need proper parameter binding
+        // Bind parameters
+        let mut query_builder: Query<'_, Sqlite, _> = sqlx::query(&sql);
+
+        if !query.query.trim().is_empty() {
+            let pattern = if query.filters.use_regex {
+                query.query.clone()
+            } else {
+                format!("%{}%", query.query)
+            };
+            query_builder = query_builder.bind(if query.filters.case_sensitive { pattern } else { pattern.to_lowercase() });
+        }
+
+        for file_type in &query.filters.file_types {
+            query_builder = query_builder.bind(file_type);
+        }
+        if let Some(size_min) = query.filters.size_min {
+            query_builder = query_builder.bind(size_min);
+        }
+        if let Some(size_max) = query.filters.size_max {
+            query_builder = query_builder.bind(size_max);
         }
 
         let rows = query_builder.fetch_all(&self.pool).await?;

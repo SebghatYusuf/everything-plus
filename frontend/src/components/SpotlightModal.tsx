@@ -2,11 +2,40 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearch } from '../hooks/useSearch';
 import { TauriAPI } from '../lib/tauri';
 import { appWindow } from '@tauri-apps/api/window';
+import { FileText, Search, File, Folder, Calculator } from 'lucide-react';
+import { getFileIcon, highlightText } from '../lib/utils';
+import { Button } from './ui/button';
+
+type FilterType = 'all' | 'files' | 'folders';
 
 const SpotlightModal: React.FC = () => {
-  const { query, setQuery, results, isLoading } = useSearch();
+  const { query, setQuery, results, isLoading, setFilters } = useSearch();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [calculatorResult, setCalculatorResult] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLUListElement>(null);
+
+  // Basic calculator functionality
+  useEffect(() => {
+    const calculate = (expr: string): string | null => {
+      try {
+        // Very basic and unsafe eval. In a real app, use a proper math parser.
+        if (/^[\d\s()+\-*\/.^%]+$/.test(expr)) {
+          const result = new Function(`return ${expr}`)();
+          if (typeof result === 'number' && !isNaN(result)) {
+            return result.toLocaleString(); // Format with commas
+          }
+        }
+      } catch (error) {
+        // Not a valid expression
+      }
+      return null;
+    };
+
+    const result = calculate(query);
+    setCalculatorResult(result);
+  }, [query]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -18,6 +47,11 @@ const SpotlightModal: React.FC = () => {
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === 'Enter') {
         e.preventDefault();
+        if (calculatorResult) {
+          navigator.clipboard.writeText(calculatorResult);
+          appWindow.hide();
+          return;
+        }
         if (results.length > 0) {
           const selectedItem = results[selectedIndex];
           if (e.ctrlKey || e.metaKey) {
@@ -34,48 +68,136 @@ const SpotlightModal: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [results, selectedIndex]);
+  }, [results, selectedIndex, calculatorResult]);
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+    const unlisten = appWindow.onFocusChanged(({ payload: focused }) => {
+      if (focused) {
+        setQuery('');
+        setActiveFilter('all');
+        inputRef.current?.focus();
+      }
+    });
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, [setQuery]);
+
+  useEffect(() => {
+    if (resultsRef.current && results.length > 0) {
+      const selectedElement = resultsRef.current.children[selectedIndex] as HTMLLIElement;
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [selectedIndex, results]);
+
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      filesOnly: activeFilter === 'files',
+      directoriesOnly: activeFilter === 'folders',
+    }));
+  }, [activeFilter, setFilters]);
 
   return (
-    <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-lg shadow-2xl w-full h-full flex flex-col">
-      <div className="p-4">
+    <div 
+      className="bg-background/80 backdrop-blur-sm rounded-lg shadow-2xl w-full h-full flex flex-col overflow-hidden animate-scale-in"
+      onMouseDown={(e) => {
+        // Allow dragging only on the top bar
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+          appWindow.startDragging();
+        }
+      }}
+    >
+      <div className="flex items-center gap-3 p-4 border-b border-border">
+        <Search className="w-6 h-6 text-muted-foreground" />
         <input
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for files..."
-          className="w-full bg-transparent text-white text-2xl placeholder-gray-400 focus:outline-none"
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSelectedIndex(0);
+          }}
+          placeholder="Search files, folders, or calculate..."
+          className="w-full bg-transparent text-foreground text-xl placeholder-muted-foreground focus:outline-none"
         />
+        {isLoading && <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>}
       </div>
-      <div className="border-t border-gray-700 flex-grow overflow-y-auto">
-        {isLoading && <p className="text-gray-400 p-4">Loading...</p>}
-        {!isLoading && (
-          <ul>
-            {results.map((item, index) => (
-              <li
-                key={item.path}
-                className={`p-4 flex items-center cursor-pointer ${
-                  selectedIndex === index ? 'bg-blue-600' : 'hover:bg-gray-700'
-                }`}
-                onClick={() => TauriAPI.openFile(item.path)}
-                onDoubleClick={() => TauriAPI.openFileLocation(item.path)}
-              >
-                <div className="ml-4">
-                  <p className="text-white font-semibold">{item.name}</p>
-                  <p className="text-gray-400 text-sm">{item.path}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+
+      {calculatorResult && (
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-3 text-2xl">
+            <Calculator className="w-6 h-6 text-muted-foreground" />
+            <span className="font-semibold">{calculatorResult}</span>
+          </div>
+          <div className="text-xs text-muted-foreground ml-9">Press Enter to copy</div>
+        </div>
+      )}
+
+      {!calculatorResult && (
+        <>
+          <div className="p-2 border-b border-border flex items-center gap-2">
+            <Button variant={activeFilter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveFilter('all')}>All</Button>
+            <Button variant={activeFilter === 'files' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveFilter('files')}><File className="w-4 h-4 mr-2" />Files</Button>
+            <Button variant={activeFilter === 'folders' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveFilter('folders')}><Folder className="w-4 h-4 mr-2" />Folders</Button>
+          </div>
+
+          <div className="flex-grow overflow-y-auto">
+            {!isLoading && results.length === 0 && query.trim() && (
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-4" />
+                <h3 className="text-lg font-medium">No results found</h3>
+                <p>Try a different search term or filter.</p>
+              </div>
+            )}
+            
+            {!isLoading && (
+              <ul ref={resultsRef} className="p-2">
+                {results.map((item, index) => (
+                  <li
+                    key={item.path}
+                    className={`flex items-center gap-3 p-3 rounded-md cursor-pointer transition-colors ${
+                      selectedIndex === index
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-accent/50'
+                    }`}
+                    onClick={() => TauriAPI.openFile(item.path)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    onDoubleClick={() => TauriAPI.openFileLocation(item.path)}
+                    title={`Click to open • Double-click to show in folder\n${item.path}`}
+                  >
+                    <div className="text-2xl w-8 text-center">
+                      {getFileIcon(item.extension, item.type === 'folder')}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-medium truncate"
+                        dangerouslySetInnerHTML={{ __html: highlightText(item.name, query) }}
+                      />
+                      <p className={`text-sm truncate ${
+                        selectedIndex === index ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                      }`}>
+                        {item.path}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+      
+      <div className="p-2 border-t border-border text-xs text-muted-foreground text-center">
+        Use <kbd className="px-1.5 py-0.5 border rounded bg-muted">↑</kbd> <kbd className="px-1.5 py-0.5 border rounded bg-muted">↓</kbd> to navigate, <kbd className="px-1.5 py-0.5 border rounded bg-muted">Enter</kbd> to open.
       </div>
     </div>
   );
 };
 
 export default SpotlightModal;
+

@@ -19,6 +19,8 @@ export interface SearchFilters {
   caseSensitive: boolean
   useRegex: boolean
   searchContent: boolean
+  directoriesOnly?: boolean
+  filesOnly?: boolean
 }
 
 export interface SearchResult {
@@ -44,7 +46,7 @@ export interface SearchOptions {
 }
 
 export type ViewMode = 'list' | 'grid'
-export type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark' | 'rose-pine' | 'solarized-light' | 'solarized-dark' | 'dracula';
 
 export interface AppSettings {
   theme: Theme

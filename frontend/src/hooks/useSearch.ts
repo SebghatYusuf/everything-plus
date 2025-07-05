@@ -63,6 +63,8 @@ export function useSearch() {
     caseSensitive: false,
     useRegex: false,
     searchContent: false,
+    directoriesOnly: false,
+    filesOnly: false,
   })
 
   // Convert backend search filters to frontend format
@@ -76,8 +78,8 @@ export function useSearch() {
     case_sensitive: frontendFilters.caseSensitive,
     use_regex: frontendFilters.useRegex,
     search_content: frontendFilters.searchContent,
-    directories_only: false,
-    files_only: false,
+    directories_only: frontendFilters.directoriesOnly,
+    files_only: frontendFilters.filesOnly,
   })
 
   // Convert backend results to frontend format
@@ -159,7 +161,7 @@ export function useSearch() {
       }
 
       const backendFilters = convertFiltersToBackend(searchFilters)
-      const result = await TauriAPI.searchFiles(searchQuery, backendFilters)
+      const result = await TauriAPI.searchFiles(searchQuery, backendFilters as any)
       const convertedResults = convertResultsFromBackend(result.entries)
       setResults(convertedResults)
     } catch (error) {

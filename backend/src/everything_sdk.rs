@@ -14,14 +14,14 @@ use {
 };
 
 // Everything SDK constants
-#[cfg(windows)]
-const EVERYTHING_REQUEST_FILE_NAME: u32 = 0x00000001;
-#[cfg(windows)]
-const EVERYTHING_REQUEST_PATH: u32 = 0x00000002;
+// #[cfg(windows)]
+// const EVERYTHING_REQUEST_FILE_NAME: u32 = 0x00000001;
+// #[cfg(windows)]
+// const EVERYTHING_REQUEST_PATH: u32 = 0x00000002;
+// #[cfg(windows)]
+// const EVERYTHING_REQUEST_EXTENSION: u32 = 0x00000008;
 #[cfg(windows)]
 const EVERYTHING_REQUEST_FULL_PATH_AND_FILE_NAME: u32 = 0x00000004;
-#[cfg(windows)]
-const EVERYTHING_REQUEST_EXTENSION: u32 = 0x00000008;
 #[cfg(windows)]
 const EVERYTHING_REQUEST_SIZE: u32 = 0x00000010;
 #[cfg(windows)]
