@@ -139,6 +139,19 @@ export function useSearch() {
 
   // Tauri search function
   const tauriSearch = async (searchQuery: string, searchFilters: SearchFilters) => {
+    const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+    if (urlRegex.test(searchQuery)) {
+      setResults([{
+        id: searchQuery,
+        name: searchQuery,
+        path: searchQuery,
+        size: 0,
+        modified: new Date(),
+        type: 'url',
+        extension: 'url',
+      }]);
+      return;
+    }
     if (!searchQuery.trim()) {
       setResults([])
       setIsLoading(false)
@@ -185,7 +198,7 @@ export function useSearch() {
         await mockSearch(searchQuery, searchFilters)
       }
     }, 300),
-    [isTauri]
+    [isTauri, backendReady]
   )
 
   // Effect to trigger search when query or filters change

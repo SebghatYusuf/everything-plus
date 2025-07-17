@@ -198,25 +198,25 @@ impl EverythingSDK {
             return Err(anyhow::anyhow!("Everything SDK not initialized"));
         }
 
-        info!("Searching with query: '{}'", query.query);
+        info!("Searching with query: '{:?}'", query);
 
         if self.fallback_mode {
-            self.fallback_search(&query.query, query.limit.unwrap_or(100) as u32)
+            self.fallback_search(query)
         } else {
             #[cfg(windows)]
             {
-                self.perform_search(&query.query, query.limit.unwrap_or(100) as u32)
+                self.perform_search(query)
             }
             
             #[cfg(not(windows))]
             {
-                self.fallback_search(&query.query, query.limit.unwrap_or(100) as u32)
+                self.fallback_search(query)
             }
         }
     }
 
     #[cfg(windows)]
-    fn perform_search(&self, search_term: &str, max_results: u32) -> Result<SearchResult> {
+    fn perform_search(&self, query: &SearchQuery) -> Result<SearchResult> {
         let start_time = std::time::Instant::now();
         
         unsafe {
@@ -226,7 +226,7 @@ impl EverythingSDK {
             let set_sort: EverythingSetSort = self.get_function("Everything_SetSort")?;
             let set_max: EverythingSetMax = self.get_function("Everything_SetMax")?;
             let set_search: EverythingSetSearchW = self.get_function("Everything_SetSearchW")?;
-            let query: EverythingQueryW = self.get_function("Everything_QueryW")?;
+            let query_fn: EverythingQueryW = self.get_function("Everything_QueryW")?;
             let get_num_results: EverythingGetNumResults = self.get_function("Everything_GetNumResults")?;
             let get_last_error: EverythingGetLastError = self.get_function("Everything_GetLastError")?;
             
@@ -246,16 +246,19 @@ impl EverythingSDK {
             set_sort(EVERYTHING_SORT_NAME_ASCENDING);
             
             // Set maximum number of results
-            set_max(max_results);
+            set_max(query.limit.unwrap_or(1000));
+
+            // Construct the search query string
+            let search_string = self.build_search_string(query);
             
             // Convert search term to wide string
-            let search_wide: Vec<u16> = search_term.encode_utf16().chain(std::iter::once(0)).collect();
+            let search_wide: Vec<u16> = search_string.encode_utf16().chain(std::iter::once(0)).collect();
             
             // Set the search term
             set_search(search_wide.as_ptr());
             
             // Execute the query
-            let result = query(1); // TRUE for wait
+            let result = query_fn(1); // TRUE for wait
             if result == 0 {
                 let error_code = get_last_error();
                 return Err(anyhow::anyhow!("Everything query failed with error code: {}", error_code));
@@ -264,7 +267,7 @@ impl EverythingSDK {
             // Get number of results
             let num_results = get_num_results();
             
-            info!("Everything returned {} results", num_results);
+            info!("Everything returned {} results for query: {}", num_results, search_string);
             
             // Process results
             let mut entries = Vec::new();
@@ -282,6 +285,55 @@ impl EverythingSDK {
                 query_time_ms: query_time,
             })
         }
+    }
+
+    #[cfg(windows)]
+    fn build_search_string(&self, query: &SearchQuery) -> String {
+        let mut search_parts = Vec::new();
+
+        // Main query
+        if !query.query.trim().is_empty() {
+            search_parts.push(query.query.clone());
+        }
+
+        // File type filters
+        if !query.filters.file_types.is_empty() {
+            let types_str = query.filters.file_types.iter()
+                .map(|t| format!("ext:{}", t))
+                .collect::<Vec<_>>()
+                .join("|");
+            search_parts.push(format!("({})", types_str));
+        }
+
+        // Size filters
+        if let Some(min) = query.filters.size_min {
+            search_parts.push(format!("size:>={}", min));
+        }
+        if let Some(max) = query.filters.size_max {
+            search_parts.push(format!("size:<={}", max));
+        }
+
+        // Date filters (Everything uses 'dm:' for date modified)
+        if let Some(from) = query.filters.date_from {
+            search_parts.push(format!("dm:>={}", from.format("%Y-%m-%d")));
+        }
+        if let Some(to) = query.filters.date_to {
+            search_parts.push(format!("dm:<={}", to.format("%Y-%m-%d")));
+        }
+
+        // Boolean flags
+        if query.filters.directories_only {
+            search_parts.push("folder:".to_string());
+        } else if query.filters.files_only {
+            search_parts.push("file:".to_string());
+        }
+
+        // Note: include_hidden is usually a default behavior in Everything
+        // case_sensitive and use_regex are handled by Everything's own syntax if needed,
+        // but here we rely on its default smart behavior. For more complex cases,
+        // the main query string could be constructed to include `case:` or `regex:`.
+
+        search_parts.join(" ")
     }
 
     #[cfg(windows)]
@@ -413,11 +465,11 @@ impl EverythingSDK {
         }
     }
 
-    fn fallback_search(&self, search_term: &str, max_results: u32) -> Result<SearchResult> {
-        info!("Using fallback file system search for: '{}'", search_term);
+    fn fallback_search(&self, query: &SearchQuery) -> Result<SearchResult> {
+        info!("Using fallback file system search for: '{:?}'", query);
         let start_time = std::time::Instant::now();
         
-        if search_term.is_empty() {
+        if query.query.is_empty() {
             return Ok(SearchResult {
                 entries: Vec::new(),
                 total_count: 0,
@@ -426,7 +478,8 @@ impl EverythingSDK {
         }
         
         let mut entries = Vec::new();
-        let search_term_lower = search_term.to_lowercase();
+        let search_term_lower = query.query.to_lowercase();
+        let max_results = query.limit.unwrap_or(1000);
         
         // Search in common Windows directories
         let search_paths = vec![

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearch } from '../hooks/useSearch';
 import { TauriAPI } from '../lib/tauri';
 import { appWindow } from '@tauri-apps/api/window';
-import { FileText, Search, File, Folder, Calculator } from 'lucide-react';
+import { FileText, Search, File, Folder, Calculator, Globe } from 'lucide-react';
 import { getFileIcon, highlightText } from '../lib/utils';
 import { Button } from './ui/button';
 
@@ -54,12 +54,21 @@ const SpotlightModal: React.FC = () => {
         }
         if (results.length > 0) {
           const selectedItem = results[selectedIndex];
-          if (e.ctrlKey || e.metaKey) {
+          if (selectedItem.type === 'url') {
+            TauriAPI.openLink(selectedItem.path);
+          } else if (e.ctrlKey || e.metaKey) {
             TauriAPI.openFileLocation(selectedItem.path);
           } else {
             TauriAPI.openFile(selectedItem.path);
           }
           appWindow.hide();
+        } else {
+          // If no results, check if the query is a URL
+          const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+          if (urlRegex.test(query)) {
+            TauriAPI.openLink(query.startsWith('http') ? query : `https://${query}`);
+            appWindow.hide();
+          }
         }
       } else if (e.key === 'Escape') {
         appWindow.hide();
@@ -157,35 +166,38 @@ const SpotlightModal: React.FC = () => {
             
             {!isLoading && (
               <ul ref={resultsRef} className="p-2">
-                {results.map((item, index) => (
-                  <li
-                    key={item.path}
-                    className={`flex items-center gap-3 p-3 rounded-md cursor-pointer transition-colors ${
-                      selectedIndex === index
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-accent/50'
-                    }`}
-                    onClick={() => TauriAPI.openFile(item.path)}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                    onDoubleClick={() => TauriAPI.openFileLocation(item.path)}
-                    title={`Click to open • Double-click to show in folder\n${item.path}`}
-                  >
-                    <div className="text-2xl w-8 text-center">
-                      {getFileIcon(item.extension, item.type === 'folder')}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="font-medium truncate"
-                        dangerouslySetInnerHTML={{ __html: highlightText(item.name, query) }}
-                      />
-                      <p className={`text-sm truncate ${
-                        selectedIndex === index ? 'text-primary-foreground/80' : 'text-muted-foreground'
-                      }`}>
-                        {item.path}
-                      </p>
-                    </div>
-                  </li>
-                ))}
+                {results.map((item, index) => {
+                  const isUrl = item.type === 'url';
+                  return (
+                    <li
+                      key={item.path}
+                      className={`flex items-center gap-3 p-3 rounded-md cursor-pointer transition-colors ${
+                        selectedIndex === index
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-accent/50'
+                      }`}
+                      onClick={() => isUrl ? TauriAPI.openLink(item.path) : TauriAPI.openFile(item.path)}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      onDoubleClick={() => isUrl ? TauriAPI.openLink(item.path) : TauriAPI.openFileLocation(item.path)}
+                      title={`Click to open • Double-click to show in folder\n${item.path}`}
+                    >
+                      <div className="text-2xl w-8 text-center">
+                        {isUrl ? <Globe className="w-6 h-6" /> : getFileIcon(item.extension, item.type === 'folder')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="font-medium truncate"
+                          dangerouslySetInnerHTML={{ __html: highlightText(item.name, query) }}
+                        />
+                        <p className={`text-sm truncate ${
+                          selectedIndex === index ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                        }`}>
+                          {item.path}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
