@@ -132,8 +132,8 @@ Access settings via `Ctrl+,` or the settings button (⚙️).
 
 **Exclude Locations:**
 Common exclusions (pre-configured):
-- `C:\Windows\WinSxS`
-- `C:\$Recycle.Bin`
+- `C:\\Windows\WinSxS`
+- `C:\\$Recycle.Bin`
 - `.git` folders
 - `node_modules` folders
 - Build directories (`target`, `dist`, `build`)
