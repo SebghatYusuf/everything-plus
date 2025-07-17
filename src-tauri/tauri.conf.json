@@ -85,7 +85,12 @@
         "depends": []
       },
       "externalBin": [],
-      "icon": [],
+      "icon": [
+        "src-tauri/icons/icon_16x16.png",
+        "src-tauri/icons/icon_32x32.png",
+        "src-tauri/icons/icon_64x64.png",
+        "src-tauri/icons/icon_128x128.png"
+      ],
       "identifier": "com.sebghatyusuf.everythingplus.app",
       "longDescription": "A modern file search application inspired by macOS Spotlight and Everything. Fast, intuitive, and powerful file searching for Windows.",
       "macOS": {
