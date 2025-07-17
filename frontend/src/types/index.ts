@@ -4,7 +4,7 @@ export interface FileResult {
   path: string
   size: number
   modified: Date
-  type: 'file' | 'folder'
+  type: 'file' | 'folder' | 'url'
   extension?: string
   icon?: string
 }
