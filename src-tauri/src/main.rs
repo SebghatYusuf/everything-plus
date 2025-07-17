@@ -239,31 +239,29 @@ fn main() {
         // .system_tray(create_system_tray())
         // .on_system_tray_event(handle_system_tray_event)
         .setup(move |app| {
-            // Setup global shortcut
-            if let Err(e) = setup_global_shortcut(&app.handle()) {
-                eprintln!("Failed to setup global shortcut: {}", e);
-            }
-            
-            // Initialize backend synchronously during startup
-            let state_clone = app_state_clone.clone();
             let handle = app.handle();
+            let app_handle = app.handle();
             
+            // Register the global shortcut
+            let mut shortcut_manager = app.global_shortcut_manager();
+            shortcut_manager.register("CommandOrControl+Space", move || {
+                toggle_spotlight(&app_handle);
+            }).unwrap_or_else(|e| {
+                eprintln!("Failed to register global shortcut: {}", e);
+            });
+
+            // Initialize backend in a separate thread
+            let state_clone = app_state_clone.clone();
             tauri::async_runtime::spawn(async move {
                 println!("Starting backend initialization...");
                 match initialize_backend(state_clone, handle.clone()).await {
                     Ok(()) => {
                         println!("Backend initialization completed successfully!");
-                        // Emit event to frontend that backend is ready
-                        if let Some(window) = handle.get_window("main") {
-                            let _ = window.emit("backend-ready", ());
-                        }
+                        handle.emit_all("backend-ready", ()).unwrap();
                     }
                     Err(e) => {
                         eprintln!("Failed to initialize backend: {}", e);
-                        // Show error dialog
-                        if let Some(window) = handle.get_window("main") {
-                            let _ = window.emit("backend-error", format!("Backend initialization failed: {}", e));
-                        }
+                        handle.emit_all("backend-error", format!("Backend initialization failed: {}", e)).unwrap();
                     }
                 }
             });
@@ -273,9 +271,15 @@ fn main() {
         .on_window_event(|event| {
             match event.event() {
                 WindowEvent::CloseRequested { api, .. } => {
-                    // Hide instead of closing when clicking X
+                    // On close, hide the window instead of quitting
                     event.window().hide().unwrap();
                     api.prevent_close();
+                }
+                WindowEvent::Focused(is_focused) => {
+                    // If the spotlight window loses focus, hide it
+                    if !is_focused && event.window().label() == "spotlight" {
+                        event.window().hide().unwrap();
+                    }
                 }
                 _ => {}
             }
@@ -291,4 +295,25 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// Function to toggle the spotlight window
+fn toggle_spotlight(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_window("spotlight") {
+        if window.is_visible().unwrap_or(false) {
+            window.hide().unwrap();
+        } else {
+            // Center and show the window
+            if let Some(monitor) = window.current_monitor().unwrap() {
+                let monitor_size = monitor.size();
+                let window_size = window.outer_size().unwrap();
+                let x = (monitor_size.width as i32 - window_size.width as i32) / 2;
+                let y = (monitor_size.height as i32 - window_size.height as i32) / 3; // Position it 1/3 from top
+                window.set_position(tauri::PhysicalPosition::new(x, y)).unwrap();
+            }
+            
+            window.show().unwrap();
+            window.set_focus().unwrap();
+        }
+    }
 }

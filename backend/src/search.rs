@@ -1,38 +1,28 @@
 use anyhow::Result;
 use regex::Regex;
 use std::sync::Arc;
-use std::time::Instant;
 use tracing::debug;
 
-use crate::database::Database;
+use crate::everything_sdk::EverythingSDK;
 use crate::types::{SearchQuery, SearchResult, SearchError};
 
 pub struct SearchEngine {
-    db: Arc<Database>,
+    sdk: Arc<EverythingSDK>,
 }
 
 impl SearchEngine {
-    pub fn new(db: Arc<Database>) -> Self {
-        Self { db }
+    pub fn new(sdk: Arc<EverythingSDK>) -> Self {
+        Self { sdk }
     }
 
     pub async fn search(&self, query: &SearchQuery) -> Result<SearchResult> {
-        let start_time = Instant::now();
+        debug!("Performing search with query: {:?}", query);
         
         // Validate and preprocess query
         let processed_query = self.preprocess_query(query)?;
         
-        // Execute search
-        let result = self.db.search(&processed_query).await?;
-        
-        let query_time = start_time.elapsed().as_millis() as u64;
-        debug!("Search completed in {}ms", query_time);
-        
-        Ok(SearchResult {
-            entries: result.entries,
-            total_count: result.total_count,
-            query_time_ms: query_time,
-        })
+        // Execute search using the SDK
+        self.sdk.search(&processed_query).await
     }
 
     fn preprocess_query(&self, query: &SearchQuery) -> Result<SearchQuery> {
@@ -90,8 +80,8 @@ mod tests {
 
     #[test]
     fn test_regex_validation() {
-        let db = Arc::new(Database::new(":memory:").await.unwrap());
-        let engine = SearchEngine::new(db);
+        let sdk = Arc::new(EverythingSDK::new().unwrap());
+        let engine = SearchEngine::new(sdk);
 
         let valid_query = SearchQuery {
             query: r"test\d+".to_string(),

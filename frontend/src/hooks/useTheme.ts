@@ -1,34 +1,45 @@
-import { useState, useEffect } from 'react'
-import type { Theme } from '../types'
+import { useState, useEffect, useCallback } from 'react';
+import { themes } from '../lib/themes';
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Check if we're in the browser
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme') as Theme
-      if (saved) return saved
-      
-      // Check system preference
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  const [themeName, setThemeName] = useState('dark');
+
+  const applyTheme = useCallback((name: string) => {
+    const newTheme = themes.find(t => t.name === name) || themes[0];
+    const root = window.document.documentElement;
+
+    // Remove all theme classes
+    for (const t of themes) {
+      root.classList.remove(t.name);
     }
-    return 'light'
-  })
+    
+    // Add new theme class
+    root.classList.add(newTheme.name);
+
+    // Apply CSS variables
+    for (const [key, value] of Object.entries(newTheme.colors)) {
+      root.style.setProperty(`--${key}`, value);
+    }
+
+    setThemeName(newTheme.name);
+    localStorage.setItem('theme', newTheme.name);
+  }, []);
 
   useEffect(() => {
-    const root = window.document.documentElement
-    
-    if (theme === 'dark') {
-      root.classList.add('dark')
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      applyTheme(savedTheme);
     } else {
-      root.classList.remove('dark')
+      // Default to system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(prefersDark ? 'dark' : 'light');
     }
-    
-    localStorage.setItem('theme', theme)
-  }, [theme])
+  }, [applyTheme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
-  }
+    const newThemeName = themeName === 'light' ? 'dark' : 'light';
+    applyTheme(newThemeName);
+  };
 
-  return { theme, setTheme, toggleTheme }
+  return { theme: themeName, applyTheme, toggleTheme, themes };
 }

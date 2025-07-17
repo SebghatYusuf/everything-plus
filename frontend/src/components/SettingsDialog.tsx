@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
-import { AppSettings } from '../types'
-import { Folder, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { AppSettings, Theme } from '../types'
+import { Folder, Plus, Trash2, ToggleLeft, ToggleRight, Check } from 'lucide-react'
+import { useTheme } from '../hooks/useTheme'
 
 interface SettingsDialogProps {
   open: boolean
@@ -10,9 +11,9 @@ interface SettingsDialogProps {
 }
 
 const defaultSettings: AppSettings = {
-  theme: 'light',
-  indexPaths: ['C:\\'],
-  excludePaths: ['C:\\Windows\\WinSxS', 'C:\\$Recycle.Bin'],
+  theme: 'dark',
+  indexPaths: ['C:'],
+  excludePaths: ['C:\Windows\WinSxS', 'C:\$Recycle.Bin'],
   maxResults: 1000,
   enableNetworkDrives: false,
   startWithWindows: false,
@@ -21,7 +22,8 @@ const defaultSettings: AppSettings = {
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings)
+  const { theme, applyTheme, themes } = useTheme();
+  const [settings, setSettings] = useState<AppSettings>({ ...defaultSettings, theme: theme as Theme });
   const [newPath, setNewPath] = useState('')
 
   const updateSetting = <K extends keyof AppSettings>(
@@ -54,7 +56,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   }
 
   const handleSave = () => {
-    // In a real app, this would save to backend/config
+    applyTheme(settings.theme);
     console.log('Saving settings:', settings)
     onOpenChange(false)
   }
@@ -67,6 +69,31 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Theme */}
+          <div>
+            <h3 className="text-lg font-medium mb-3">Theme</h3>
+            <div className="grid grid-cols-3 gap-4">
+              {themes.map((t) => (
+                <Button
+                  key={t.name}
+                  variant={settings.theme === t.name ? 'default' : 'outline'}
+                  onClick={() => updateSetting('theme', t.name as Theme)}
+                  className="h-16 flex flex-col items-start justify-between"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="capitalize">{t.name}</span>
+                    {settings.theme === t.name && <Check className="w-4 h-4" />}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: `hsl(${t.colors.primary})` }}></div>
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: `hsl(${t.colors.secondary})` }}></div>
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: `hsl(${t.colors.accent})` }}></div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {/* Index Paths */}
           <div>
             <h3 className="text-lg font-medium mb-3">Index Locations</h3>

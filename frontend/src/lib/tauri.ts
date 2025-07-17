@@ -68,6 +68,16 @@ export class TauriAPI {
     }
   }
 
+  static async openLink(url: string): Promise<void> {
+    try {
+      const { open } = await import('@tauri-apps/api/shell');
+      await open(url);
+    } catch (error) {
+      console.error('Failed to open link:', error);
+      throw new Error(`Failed to open link: ${error}`);
+    }
+  }
+
   static async showWindow(): Promise<void> {
     try {
       await invoke('show_window')

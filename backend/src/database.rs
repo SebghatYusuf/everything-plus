@@ -1,5 +1,7 @@
 use anyhow::Result;
-use sqlx::{Row, SqlitePool};
+use chrono::Utc;
+use sqlx::{Row, Sqlite, SqlitePool};
+use sqlx::query::Query;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
@@ -38,8 +40,7 @@ impl Database {
                 created TEXT NOT NULL,
                 is_directory BOOLEAN NOT NULL,
                 extension TEXT,
-                attributes INTEGER NOT NULL,
-                indexed_at TEXT NOT NULL
+                attributes INTEGER NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_name ON file_entries(name);
@@ -107,8 +108,8 @@ impl Database {
         sqlx::query(
             r#"
             INSERT OR REPLACE INTO file_entries 
-            (id, name, path, size, modified, created, is_directory, extension, attributes, indexed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, name, path, size, modified, created, is_directory, extension, attributes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(entry.id.to_string())
@@ -120,7 +121,6 @@ impl Database {
         .bind(entry.is_directory)
         .bind(&entry.extension)
         .bind(entry.attributes)
-        .bind(entry.indexed_at.to_rfc3339())
         .execute(&self.pool)
         .await?;
 
@@ -134,8 +134,8 @@ impl Database {
             sqlx::query(
                 r#"
                 INSERT OR REPLACE INTO file_entries 
-                (id, name, path, size, modified, created, is_directory, extension, attributes, indexed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, name, path, size, modified, created, is_directory, extension, attributes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 "#,
             )
             .bind(entry.id.to_string())
@@ -147,7 +147,6 @@ impl Database {
             .bind(entry.is_directory)
             .bind(&entry.extension)
             .bind(entry.attributes)
-            .bind(entry.indexed_at.to_rfc3339())
             .execute(&mut *tx)
             .await?;
         }
@@ -156,132 +155,7 @@ impl Database {
         Ok(())
     }
 
-    pub async fn search(&self, query: &SearchQuery) -> Result<SearchResult> {
-        let start_time = std::time::Instant::now();
-        
-        let mut sql = String::from("SELECT * FROM file_entries WHERE 1=1");
-        let mut conditions = Vec::new();
-        let mut params: Vec<Box<dyn sqlx::Encode<'_, sqlx::Sqlite> + Send + Sync>> = Vec::new();
-        let mut param_count = 0;
-
-        // Name/path search
-        if !query.query.trim().is_empty() {
-            if query.filters.use_regex {
-                // For regex, we'll do a LIKE search as a fallback
-                conditions.push(format!("(name LIKE ? OR path LIKE ?)"));
-                let pattern = format!("%{}%", query.query);
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-                param_count += 2;
-            } else if query.filters.case_sensitive {
-                conditions.push(format!("(name LIKE ? OR path LIKE ?)"));
-                let pattern = format!("%{}%", query.query);
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-                param_count += 2;
-            } else {
-                conditions.push(format!("(LOWER(name) LIKE ? OR LOWER(path) LIKE ?)"));
-                let pattern = format!("%{}%", query.query.to_lowercase());
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-                param_count += 2;
-            }
-        }
-
-        // File type filters
-        if !query.filters.file_types.is_empty() {
-            let placeholders: Vec<String> = (0..query.filters.file_types.len())
-                .map(|_| "?".to_string())
-                .collect();
-            conditions.push(format!("extension IN ({})", placeholders.join(", ")));
-            
-            for file_type in &query.filters.file_types {
-                params.push(Box::new(file_type.clone()));
-                param_count += 1;
-            }
-        }
-
-        // Size filters
-        if let Some(size_min) = query.filters.size_min {
-            conditions.push("size >= ?".to_string());
-            params.push(Box::new(size_min));
-            param_count += 1;
-        }
-        
-        if let Some(size_max) = query.filters.size_max {
-            conditions.push("size <= ?".to_string());
-            params.push(Box::new(size_max));
-            param_count += 1;
-        }
-
-        // Directory/file type filters
-        if query.filters.directories_only {
-            conditions.push("is_directory = 1".to_string());
-        } else if query.filters.files_only {
-            conditions.push("is_directory = 0".to_string());
-        }
-
-        // Hidden files filter
-        if !query.filters.include_hidden {
-            conditions.push("name NOT LIKE '.%'".to_string());
-        }
-
-        // Add conditions to SQL
-        if !conditions.is_empty() {
-            sql.push_str(" AND ");
-            sql.push_str(&conditions.join(" AND "));
-        }
-
-        // Add ordering and limits
-        sql.push_str(" ORDER BY is_directory DESC, name ASC");
-        
-        if let Some(limit) = query.limit {
-            sql.push_str(&format!(" LIMIT {}", limit));
-            
-            if let Some(offset) = query.offset {
-                sql.push_str(&format!(" OFFSET {}", offset));
-            }
-        }
-
-        debug!("Executing search query: {}", sql);
-
-        // Execute the query
-        let mut query_builder = sqlx::query(&sql);
-        for param in params {
-            // This is a simplified approach - in a real implementation,
-            // you'd need proper parameter binding
-        }
-
-        let rows = query_builder.fetch_all(&self.pool).await?;
-        
-        let mut entries = Vec::new();
-        for row in rows {
-            let entry = FileEntry {
-                id: uuid::Uuid::parse_str(&row.get::<String, _>("id"))?,
-                name: row.get("name"),
-                path: row.get("path"),
-                size: row.get("size"),
-                modified: chrono::DateTime::parse_from_rfc3339(&row.get::<String, _>("modified"))?
-                    .with_timezone(&chrono::Utc),
-                created: chrono::DateTime::parse_from_rfc3339(&row.get::<String, _>("created"))?
-                    .with_timezone(&chrono::Utc),
-                is_directory: row.get("is_directory"),
-                extension: row.get("extension"),
-                attributes: row.get("attributes"),
-                indexed_at: chrono::DateTime::parse_from_rfc3339(&row.get::<String, _>("indexed_at"))?
-                    .with_timezone(&chrono::Utc),
-            };
-            entries.push(entry);
-        }
-
-        let query_time = start_time.elapsed().as_millis() as u64;
-        
-        Ok(SearchResult {
-            total_count: entries.len() as u64,
-            entries,
-            query_time_ms: query_time,
-        })
-    }
+    
 
     pub async fn get_stats(&self) -> Result<crate::types::IndexStats> {
         let row = sqlx::query(
@@ -289,8 +163,7 @@ impl Database {
             SELECT 
                 COUNT(CASE WHEN is_directory = 0 THEN 1 END) as file_count,
                 COUNT(CASE WHEN is_directory = 1 THEN 1 END) as dir_count,
-                COALESCE(SUM(CASE WHEN is_directory = 0 THEN size END), 0) as total_size,
-                MAX(indexed_at) as last_updated
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN size END), 0) as total_size
             FROM file_entries
             "#,
         )
@@ -300,11 +173,8 @@ impl Database {
         Ok(crate::types::IndexStats {
             total_files: row.get::<i64, _>("file_count") as u64,
             total_directories: row.get::<i64, _>("dir_count") as u64,
-            total_size: row.get::<i64, _>("total_size") as u64,
-            last_updated: chrono::DateTime::parse_from_rfc3339(
-                &row.get::<String, _>("last_updated")
-            )?
-            .with_timezone(&chrono::Utc),
+            index_size_bytes: row.get::<i64, _>("total_size") as u64,
+            last_index_time: Utc::now(), // This should be updated to reflect actual index time
             indexed_paths: Vec::new(), // TODO: Store and retrieve indexed paths
         })
     }

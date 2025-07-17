@@ -1,41 +1,50 @@
 pub mod types;
 pub mod everything_sdk;
+pub mod search;
+pub mod database;
 
 use anyhow::Result;
+use std::sync::Arc;
 use tracing::info;
 
 pub use types::*;
 pub use everything_sdk::EverythingSDK;
+use crate::search::SearchEngine;
 
-/// Main application structure - simplified to use Everything SDK directly
+/// Main application structure
 pub struct EverythingClone {
-    pub everything_sdk: EverythingSDK,
+    pub search_engine: Arc<SearchEngine>,
+    pub everything_sdk: Arc<EverythingSDK>,
 }
 
 impl EverythingClone {
     /// Initialize the application
     pub async fn new() -> Result<Self> {
-        let mut everything_sdk = EverythingSDK::new()?;
-        everything_sdk.initialize().await?;
+        let mut sdk = EverythingSDK::new()?;
+        sdk.initialize().await?;
+        let sdk_arc = Arc::new(sdk);
+        
+        let search_engine = Arc::new(SearchEngine::new(sdk_arc.clone()));
         
         Ok(Self {
-            everything_sdk,
+            search_engine,
+            everything_sdk: sdk_arc,
         })
     }
 
-    /// Perform a search query using Everything SDK
+    /// Perform a search query
     pub async fn search(&self, query: &SearchQuery) -> Result<SearchResult> {
-        self.everything_sdk.search(query).await
+        self.search_engine.search(query).await
     }
 
-    /// Get indexing statistics from Everything
+    /// Get indexing statistics
     pub async fn get_stats(&self) -> Result<IndexStats> {
         self.everything_sdk.get_stats().await
     }
 
-    /// Everything handles indexing automatically, so we don't need manual indexing
+    /// Everything handles indexing automatically
     pub async fn start_indexing(&mut self) -> Result<()> {
-        info!("Everything SDK handles indexing automatically - no manual indexing needed");
+        info!("Everything SDK handles indexing automatically.");
         Ok(())
     }
 }
