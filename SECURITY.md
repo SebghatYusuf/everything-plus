@@ -117,12 +117,11 @@ We regularly audit our dependencies for security vulnerabilities:
 ### Contact Information
 
 For security-related inquiries:
-- **Email**: security@yourcompany.com
-- **PGP Key**: [Available on request]
+- **Email**: sebghatyusuf@gmail.com
 - **Response Time**: Within 48 hours
 
 For general issues:
-- **GitHub Issues**: https://github.com/your-username/everything-plus/issues
+- **GitHub Issues**: https://github.com/sebghatyusuf/everything-plus/issues
 - **Documentation**: See README.md and docs/
 
 ### Legal
