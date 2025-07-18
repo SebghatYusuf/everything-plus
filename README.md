@@ -1,5 +1,14 @@
 # Everything Plus - Modern File Search Application
 
+
+## Screenshots
+
+| Main Search UI | Spotlight Calculator | Spotlight Search |
+|:--------------:|:----------:|:----------------:|
+| ![Main UI](./assets/screenshots/main.png) | ![Spotlight](./assets/screenshots/spotlight.png) | ![Context Menu](./assets/screenshots/spotlight2.png) |
+
+> _All screenshots are from local development builds. Images are located in `assets/screenshots/`._
+
 ## Features
 - **Real-time file/folder indexing** - Instant indexing of NTFS file systems and network drives
 - **Lightning-fast search** - Sub-100ms search responses as you type with Everything SDK integration
