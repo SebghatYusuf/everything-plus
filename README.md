@@ -5,7 +5,7 @@
 
 | Main Search UI | Spotlight Calculator | Spotlight Search |
 |:--------------:|:----------:|:----------------:|
-| ![Main UI](./assets/screenshots/main.png) | ![Spotlight](./assets/spotlight.png) | ![Context Menu](./assets/screenshots/spotlight2.png) |
+| ![Main UI](./assets/screenshots/main.png) | ![Spotlight](./assets/screenshots/spotlight.png) | ![Context Menu](./assets/screenshots/spotlight2.png) |
 
 > _All screenshots are from local development builds. Images are located in `assets/screenshots/`._
 
